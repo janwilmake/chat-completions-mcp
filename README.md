@@ -1,4 +1,4 @@
-This implementation demonstrates using /chat/completions as a tool uses progress notifications that show the intermittend generated tokens amount and a mesasge until the full chat completions answer has arrived.
+This implementation demonstrates using /chat/completions as a tool uses progress notifications that show the intermediate generated tokencount and a message until the full chat completions answer has arrived.
 
 My aim was to see if it's possible to also show intermediate tool results in the client somehow, but this seems not to be possible yet, but I found some related issues / PRs that may make this possible:
 
