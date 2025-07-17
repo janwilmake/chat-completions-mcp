@@ -62,35 +62,21 @@ interface ChatCompletionStreamResponse {
   }>;
 }
 
-export function chatMcpHandler(config: ChatMcpConfig) {
-  return async (
-    request: Request,
-    env: any,
-    ctx: ExecutionContext
-  ): Promise<Response> => {
-    // Handle preflight OPTIONS request
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
-          "Access-Control-Max-Age": "86400",
-        },
-      });
-    }
-
-    if (request.method === "POST") {
-      return handleChatMcp(request, config);
-    }
-  };
-}
-
-async function handleChatMcp(
+export async function handleChatMcp(
   request: Request,
   config: ChatMcpConfig
 ): Promise<Response> {
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
+        "Access-Control-Max-Age": "86400",
+      },
+    });
+  }
   try {
     const message: any = await request.json();
 
