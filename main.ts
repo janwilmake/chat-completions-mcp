@@ -22,6 +22,8 @@ interface ChatMcpConfig {
   apiKey: string;
   /** defaults to 2025-03-26 */
   protocolVersion?: string;
+  /** If provided will use this to fetch, rather than regular fetch */
+  fetcher?: Fetcher;
 }
 
 interface ChatCompletionRequest {
@@ -177,9 +179,9 @@ export async function handleChatMcp(
           stream: isStreaming,
         };
 
-        console.log({ acceptHeader, isStreaming, chatRequest });
+        const fetchFn = config.fetcher?.fetch || fetch;
 
-        const response = await fetch(`${config.basePath}/chat/completions`, {
+        const response = await fetchFn(`${config.basePath}/chat/completions`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

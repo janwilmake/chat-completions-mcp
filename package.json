@@ -1,8 +1,9 @@
 {
   "name": "chat-completions-mcp",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "main": "main.ts",
   "files": [
-    "main.ts"
+    "main.ts",
+    "cf.ts"
   ]
 }
