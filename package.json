@@ -1,9 +1,11 @@
 {
   "name": "chat-completions-mcp",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "main": "main.ts",
   "files": [
-    "main.ts",
-    "cf.ts"
-  ]
+    "main.ts"
+  ],
+  "dependencies": {
+    "simplerauth-client": "0.0.19"
+  }
 }

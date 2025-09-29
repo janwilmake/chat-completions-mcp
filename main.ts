@@ -1,29 +1,32 @@
+import { withSimplerAuth } from "simplerauth-client";
+
 export default {
-  fetch: (request: Request, env: Env) => {
-    const url = new URL(request.url);
-    if (url.pathname === "/mcp") {
-      return handleChatMcp(request, {
-        apiKey: env.LLM_SECRET,
-        basePath: env.LLM_BASEPATH,
-        model: env.LLM_MODEL,
-      });
+  fetch: withSimplerAuth(
+    (request: Request, env: any, ctx: any) => {
+      const url = new URL(request.url);
+      if (url.pathname === "/mcp") {
+        return handleChatMcp(request, {
+          accessToken: ctx.accessToken,
+          authenticated: ctx.authenticated,
+        });
+      }
+      return new Response(
+        `Connect 'npx @modelcontextprotocol/inspector' with ${url.origin}/mcp`
+      );
+    },
+    {
+      oauthProviderHost: "openrouter.simplerauth.com",
+      scope: "api",
+      isLoginRequired: false,
     }
-    return new Response(
-      `Connect 'npx @modelcontextprotocol/inspector' with ${url.origin}/mcp`
-    );
-  },
+  ),
 };
 
-type Env = { LLM_SECRET: string; LLM_BASEPATH: string; LLM_MODEL: string };
-
 interface ChatMcpConfig {
-  basePath: string;
-  model: string;
-  apiKey: string;
+  accessToken?: string;
+  authenticated: boolean;
   /** defaults to 2025-03-26 */
   protocolVersion?: string;
-  /** If provided will use this to fetch, rather than regular fetch */
-  fetcher?: Fetcher;
 }
 
 interface ChatCompletionRequest {
@@ -79,6 +82,27 @@ export async function handleChatMcp(
       },
     });
   }
+
+  if (!config.authenticated || !config.accessToken) {
+    return new Response(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        error: {
+          code: -32001,
+          message:
+            "Authentication required. Please login with OpenRouter OAuth.",
+        },
+      }),
+      {
+        status: 401,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      }
+    );
+  }
+
   try {
     const message: any = await request.json();
 
@@ -92,7 +116,7 @@ export async function handleChatMcp(
             protocolVersion: config.protocolVersion || "2025-03-26",
             capabilities: { tools: {} },
             serverInfo: {
-              name: "Chat-MCP-Server",
+              name: "Chat-MCP-OAuth-Server",
               version: "1.0.0",
             },
           },
@@ -119,14 +143,21 @@ export async function handleChatMcp(
       const tools = [
         {
           name: "chat_completion",
-          title: "Chat Completion",
-          description: "Generate chat completion using the configured model",
+          title: "Chat Completion (OpenRouter OAuth)",
+          description:
+            "Generate chat completion using OpenRouter API with OAuth authentication",
           inputSchema: {
             type: "object",
             properties: {
               prompt: {
                 type: "string",
                 description: "The prompt to send to the chat model",
+              },
+              model: {
+                type: "string",
+                description:
+                  "The model to use (default: anthropic/claude-3.5-sonnet)",
+                default: "anthropic/claude-3.5-sonnet",
               },
             },
             required: ["prompt"],
@@ -173,22 +204,28 @@ export async function handleChatMcp(
         const acceptHeader = request.headers.get("accept");
         const isStreaming = acceptHeader?.includes("text/event-stream");
 
+        // Use provided model or default to Claude 3.5 Sonnet
+        const model = args.model || "anthropic/claude-3.5-sonnet";
+
         const chatRequest: ChatCompletionRequest = {
-          model: config.model,
+          model: model,
           messages: [{ role: "user", content: args.prompt }],
           stream: isStreaming,
         };
 
-        const fetchFn = config.fetcher?.fetch || fetch;
-
-        const response = await fetchFn(`${config.basePath}/chat/completions`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${config.apiKey}`,
-          },
-          body: JSON.stringify(chatRequest),
-        });
+        const response = await fetch(
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${config.accessToken}`,
+              "HTTP-Referer": "https://chat-mcp-oauth.example.com", // Required by OpenRouter
+              "X-Title": "Chat MCP OAuth Server", // Required by OpenRouter
+            },
+            body: JSON.stringify(chatRequest),
+          }
+        );
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -217,6 +254,7 @@ export async function handleChatMcp(
             }
           );
         }
+
         if (isStreaming) {
           // Handle streaming response with Server-Sent Events
           const reader = response.body?.getReader();
@@ -313,7 +351,7 @@ export async function handleChatMcp(
                         params: {
                           progressToken: _meta.progressToken,
                           progress: Math.round(accumulatedContent.length / 5),
-                          message: "Accumulating response",
+                          message: `Generating response with ${model}...`,
                         },
                       });
                       const event = `data: ${notification}\n\n`;

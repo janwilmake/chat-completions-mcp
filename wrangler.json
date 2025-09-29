@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/wrangler@latest/config-schema.json",
+  "name": "chat-completions-mcp",
+  "compatibility_date": "2025-08-14",
+  "observability": { "logs": { "enabled": true } },
+  "main": "main.ts",
+  "routes": [
+    {
+      "custom_domain": true,
+      "pattern": "mcp.chatcompletions.com"
+    }
+  ]
+}
