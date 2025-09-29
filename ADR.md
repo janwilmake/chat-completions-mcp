@@ -9,4 +9,6 @@ https://github.com/modelcontextprotocol/modelcontextprotocol/issues/484
 - by sending multiple responses (if `_meta.allowPartial:true`): https://github.com/modelcontextprotocol/modelcontextprotocol/pull/776
 - delta in progress notification (if `_meta.partialResults:true`): https://github.com/modelcontextprotocol/modelcontextprotocol/pull/383
 
-v2 (0.1.0 onwards) is using openrouter oauth provider
+# v2
+
+(0.1.0 onwards) is using [openrouter oauth provider](https://github.com/janwilmake/universal-mcp-oauth/tree/main/openrouter-oauth-provider) which i made
